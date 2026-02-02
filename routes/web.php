@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Project;
 use App\Models\Ticket;
+use App\Http\Controllers\TicketAttachmentController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\ProjectController;
@@ -55,6 +56,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketController::class);
     Route::resource('companies', CompanyController::class);
     Route::resource('projects', ProjectController::class);
+    Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+    Route::get('/tickets/{ticket}/attachment', [TicketAttachmentController::class, 'show'])
+        ->name('tickets.attachment');
 });
 
 require __DIR__ . '/auth.php';

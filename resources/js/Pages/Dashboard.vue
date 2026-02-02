@@ -1,7 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
+import { statusLabel, statusPillClasses } from '@/utils/status'
 
+const statuses = [
+  { key: 'open', label: 'Aberto' },
+  { key: 'in_progress', label: 'Em solução' },
+  { key: 'closed', label: 'Fechado' },
+]
 defineProps({
     stats: Object,
     projects: Array,
@@ -62,7 +68,6 @@ function processedStatus(ticket) {
                                     <th class="py-2">Título</th>
                                     <th class="py-2">Status</th>
                                     <th class="py-2">Projeto</th>
-                                    <th class="py-2">Processamento</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -70,14 +75,15 @@ function processedStatus(ticket) {
                                     <td class="py-2">
                                         {{ t.title }}
                                     </td>
-                                    <td class="py-2">
-                                        {{ t.status }}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1"
+                                            :class="statusPillClasses(t.status)">
+                                            {{ statusLabel(t.status) }}
+                                        </span>
                                     </td>
                                     <td class="py-2">
                                         {{ t.project?.name ?? '—' }}
-                                    </td>
-                                    <td class="py-2">
-                                        {{ processedStatus(t) }}
                                     </td>
                                 </tr>
                             </tbody>

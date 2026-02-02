@@ -1,14 +1,24 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { statusLabel, statusPillClasses } from '@/utils/status'
+
+const statuses = [
+    { key: 'open', label: 'Aberto' },
+    { key: 'in_progress', label: 'Em solução' },
+    { key: 'closed', label: 'Fechado' },
+]
+
+const setStatus = (ticketId, status) => {
+    router.patch(route('tickets.status', ticketId), { status }, { preserveScroll: true })
+}
 
 const delForm = useForm({})
 
 function destroyTicket(id) {
     if (!confirm('Tem certeza que deseja excluir este ticket?')) return
-    delForm.delete(`/tickets/${id}`)
+    delForm.delete(route('tickets.destroy', id), { preserveScroll: true })
 }
 
 defineProps({
@@ -41,7 +51,7 @@ function isTextExt(ext) {
 async function openPreview(ticket) {
     if (!ticket.attachment_path) return
 
-    previewUrl.value = `/storage/${ticket.attachment_path}`
+    previewUrl.value = route('tickets.attachment', ticket.id)
     previewName.value = ticket.title
     show.value = true
 
@@ -100,7 +110,6 @@ function jobStatus(ticket) {
 }
 </script>
 
-
 <template>
     <AuthenticatedLayout>
 
@@ -134,45 +143,59 @@ function jobStatus(ticket) {
                                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Ações</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">ID</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Título</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Projeto</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Job</th>
-                                            <th class="px-4 py-3 text-left font-medium text-gray-600">Anexo</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Ações</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">ID</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Título</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Projeto</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Status</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Job</th>
+                                            <th class="px-6 py-3 text-left font-medium text-gray-600">Anexo</th>
                                         </tr>
                                     </thead>
 
                                     <tbody class="divide-y divide-gray-200 bg-white">
                                         <tr v-for="t in tickets" :key="t.id" class="hover:bg-gray-50">
-                                            <td class="px-4 py-3">
-                                                <button type="button"
-                                                    class="text-sm text-red-600 underline hover:text-red-800"
-                                                    @click="destroyTicket(t.id)">
-                                                    Excluir
-                                                </button>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <div class="flex items-center gap-3">
+                                                    <div
+                                                        class="inline-flex rounded-md shadow-sm ring-1 ring-gray-200 overflow-hidden">
+                                                        <button v-for="s in statuses" :key="s.key" type="button"
+                                                            class="px-3 py-1 text-xs font-medium focus:outline-none"
+                                                            :disabled="t.status === s.key" :class="t.status === s.key
+                                                                ? 'bg-indigo-600 text-white cursor-default'
+                                                                : 'bg-white text-gray-700 hover:bg-gray-50'"
+                                                            @click="setStatus(t.id, s.key)">
+                                                            {{ s.label }}
+                                                        </button>
+                                                    </div>
+
+                                                    <button type="button"
+                                                        class="text-xs font-medium text-red-600 hover:text-red-800"
+                                                        @click="destroyTicket(t.id)">
+                                                        Excluir
+                                                    </button>
+                                                </div>
                                             </td>
 
-                                            <td class="px-4 py-3 text-gray-700">{{ t.id }}</td>
-                                            <td class="px-4 py-3 text-gray-900">{{ t.title }}</td>
-                                            <td class="px-4 py-3 text-gray-700">{{ t.project?.name ?? '—' }}</td>
+                                            <td class="px-6 py-4 text-gray-700 whitespace-nowrap">{{ t.id }}</td>
 
-                                            <td class="px-4 py-3">
+                                            <td class="px-6 py-4 text-gray-900">{{ t.title }}</td>
+
+                                            <td class="px-6 py-4 text-gray-700">{{ t.project?.name ?? '—' }}</td>
+
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
                                                 <span
-                                                    class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                                                    :class="t.status === 'open'
-                                                        ? 'bg-green-50 text-green-700'
-                                                        : 'bg-gray-100 text-gray-700'">
-                                                    {{ t.status }}
+                                                    class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1"
+                                                    :class="statusPillClasses(t.status)">
+                                                    {{ statusLabel(t.status) }}
                                                 </span>
                                             </td>
 
-                                            <td class="px-4 py-3 text-gray-700">
+                                            <td class="px-6 py-4 text-gray-700 whitespace-nowrap">
                                                 {{ jobStatus(t) }}
                                             </td>
 
-                                            <td class="px-4 py-3">
+                                            <td class="px-6 py-4 whitespace-nowrap">
                                                 <button v-if="t.attachment_path" type="button" @click="openPreview(t)"
                                                     class="text-sm underline text-gray-900 hover:text-gray-700">
                                                     Preview
@@ -194,7 +217,7 @@ function jobStatus(ticket) {
         </div>
 
         <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-            @click="closePreview">
+            @click.self="closePreview">
             <div class="w-full max-w-3xl rounded-lg bg-white shadow" @click.stop>
                 <div class="flex items-center justify-between border-b px-4 py-3">
                     <div class="text-sm font-semibold text-gray-900">Preview: {{ previewName }}</div>
@@ -225,6 +248,5 @@ function jobStatus(ticket) {
                 </div>
             </div>
         </div>
-
     </AuthenticatedLayout>
 </template>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Ticket;
+use App\Models\TicketStatusHistory;
 use App\Models\TicketDetail;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -84,6 +85,35 @@ class TicketController extends Controller
         return redirect()->route('tickets.index');
     }
 
+    public function updateStatus(Request $request, Ticket $ticket)
+    {
+        $ticket->load('project');
+
+        if ($ticket->project->company_id !== auth()->user()->company_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status' => ['required', 'in:' . implode(',', Ticket::allowedStatuses())],
+        ]);
+
+        $from = $ticket->status;
+
+        if ($from === $data['status']) {
+            return back();
+        }
+
+        $ticket->update(['status' => $data['status']]);
+
+        TicketStatusHistory::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => auth()->id(),
+            'from_status' => $from,
+            'to_status' => $data['status'],
+        ]);
+
+        return back()->with('success', 'Status atualizado.');
+    }
 
     /**
      * Display the specified resource.
